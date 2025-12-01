@@ -19,7 +19,7 @@
 let items = [];
 
 // Load Google Sheet CSV
-fetch("https://docs.google.com/spreadsheets/d/REPLACE_SHEET_ID/export?format=csv")
+fetch("https://docs.google.com/spreadsheets/d/1O0H8iVkIk92U0W5HLLJG5pWtGkhPfBD7IysidXc5sYI/edit?usp=sharing")
   .then(res => res.text())
   .then(data => {
       let rows = data.split("\n").map(r => r.split(","));
