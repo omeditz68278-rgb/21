@@ -20,71 +20,103 @@ th {
 <input id="search" placeholder="Search..." style="padding:10px;width:100%;margin-top:10px">
 
 <table>
-    <thead>
-        <tr>
-            <th>S.NO</th>
-            <th>ITEM NAME</th>
-            <th>Section</th>
-            <th>Number</th>
-        </tr>
-    </thead>
+    <thead id="thead"></thead>
     <tbody id="sheetData"></tbody>
 </table>
 
 <script>
 let items = [];
+let headers = [];
 let lastSearch = "";
 
+// CSV parser that supports quotes correctly
+function parseCSV(text) {
+    const rows = [];
+    let row = [];
+    let cell = "";
+    let insideQuotes = false;
+
+    for (let i = 0; i < text.length; i++) {
+        const char = text[i];
+
+        if (char === '"' && text[i + 1] === '"') {
+            cell += '"';
+            i++;
+        } else if (char === '"') {
+            insideQuotes = !insideQuotes;
+        } else if (char === ',' && !insideQuotes) {
+            row.push(cell);
+            cell = "";
+        } else if ((char === '\n' || char === '\r') && !insideQuotes) {
+            if (cell || row.length) {
+                row.push(cell);
+                rows.push(row);
+                row = [];
+                cell = "";
+            }
+        } else {
+            cell += char;
+        }
+    }
+
+    if (cell || row.length) {
+        row.push(cell);
+        rows.push(row);
+    }
+
+    return rows;
+}
+
 async function loadData() {
-    try {
-        let res = await fetch("https://docs.google.com/spreadsheets/d/1O0H8iVkIk92U0W5HLLJG5pWtGkhPfBD7IysidXc5sYI/export?format=csv");
-        let data = await res.text();
+    const res = await fetch("https://docs.google.com/spreadsheets/d/1O0H8iVkIk92U0W5HLLJG5pWtGkhPfBD7IysidXc5sYI/export?format=csv");
+    const csv = await res.text();
 
-        let rows = data.split(/\r?\n/);
-        items = [];
+    const rows = parseCSV(csv);
 
-        rows.forEach((row, index) => {
-            let cols = row.split(",");
+    headers = rows[0];
+    items = [];
 
-            if (index === 0 || cols.length < 4) return;
+    for (let i = 1; i < rows.length; i++) {
+        if (rows[i].length === 0) continue;
 
-            items.push({
-                sno: cols[0]?.trim(),
-                name: cols[1]?.trim(),
-                section: cols[2]?.trim(),
-                num: cols[3]?.trim()
-            });
+        let obj = {};
+        headers.forEach((h, index) => {
+            obj[h] = rows[i][index] || "";
         });
 
-        applyFilter(lastSearch);
-    } catch (e) {
-        console.log("Error loading data", e);
+        items.push(obj);
     }
+
+    renderTableHeader();
+    applyFilter(lastSearch);
+}
+
+function renderTableHeader() {
+    document.getElementById("thead").innerHTML =
+        "<tr>" + headers.map(h => `<th>${h}</th>`).join("") + "</tr>";
 }
 
 function display(arr) {
     let html = "";
-    arr.forEach(i => {
-        html += `
-            <tr>
-                <td>${i.sno}</td>
-                <td>${i.name}</td>
-                <td>${i.section}</td>
-                <td>${i.num}</td>
-            </tr>
-        `;
+
+    arr.forEach(row => {
+        html += "<tr>";
+        headers.forEach(h => {
+            html += `<td>${row[h]}</td>`;
+        });
+        html += "</tr>";
     });
+
     document.getElementById("sheetData").innerHTML = html;
 }
 
 function applyFilter(q) {
     lastSearch = q.toLowerCase();
 
-    let filtered = items.filter(i =>
-        i.name.toLowerCase().includes(lastSearch) ||
-        i.section.toLowerCase().includes(lastSearch) ||
-        i.num.toLowerCase().includes(lastSearch) ||
-        i.sno.toLowerCase().includes(lastSearch)
+    let filtered = items.filter(row =>
+        Object.values(row).some(v =>
+            v.toString().toLowerCase().includes(lastSearch)
+        )
     );
 
     display(filtered);
@@ -94,9 +126,8 @@ document.getElementById("search").addEventListener("input", function () {
     applyFilter(this.value);
 });
 
-// 🔥 Auto-refresh every 10 seconds
+// Auto refresh every 10 seconds
 setInterval(loadData, 10000);
 
-// First load
 loadData();
 </script>
