@@ -1,52 +1,44 @@
-<!DOCTYPE html>
-<html>
-<head>
-  <title>Item Search</title>
-  <style>
-    body { font-family: Arial; padding: 20px; }
-    .item { padding: 10px; background: #f3f3f3; margin: 5px 0; border-radius: 6px; }
-    #search { width: 100%; padding: 10px; margin-bottom: 15px; }
-  </style>
-</head>
-<body>
-
-<h2>Search Items</h2>
-<input type="text" id="search" placeholder="Search items...">
-
-<div id="list"></div>
-
 <script>
 let items = [];
 
-// Load Google Sheet CSV
 fetch("https://docs.google.com/spreadsheets/d/1O0H8iVkIk92U0W5HLLJG5pWtGkhPfBD7IysidXc5sYI/export?format=csv")
   .then(res => res.text())
   .then(data => {
-      let rows = data.split("\n").map(r => r.split(","));
-      rows.shift(); // skip header
+      let rows = data.split(/\r?\n/);
 
-      items = rows.map(r => ({
-        name: r[1],    // ITEM NAME
-        section: r[2], // Section
-        num: r[3]      // Number
-      }));
+      items = [];
+
+      rows.forEach((row, index) => {
+          let cols = row.split(",");
+
+          // Skip bad rows or short rows
+          if (cols.length < 4 || index === 0) return;
+
+          items.push({
+              name: cols[1]?.trim(),
+              section: cols[2]?.trim(),
+              num: cols[3]?.trim()
+          });
+      });
 
       display(items);
   });
 
 function display(arr) {
     let html = "";
-    arr.forEach(i => html += `
-        <div class='item'>
-            <b>${i.name}</b><br>
-            Section: ${i.section} | Number: ${i.num}
-        </div>
-    `);
+    arr.forEach(i => {
+        if (!i.name) return; // skip empty rows
+        html += `
+            <div class='item'>
+                <b>${i.name}</b><br>
+                Section: ${i.section} | Number: ${i.num}
+            </div>
+        `;
+    });
     document.getElementById("list").innerHTML = html;
 }
 
-// Search with TOP sorting
-document.getElementById("search").addEventListener("input", function() {
+document.getElementById("search").addEventListener("input", function () {
     let q = this.value.toLowerCase();
 
     let sorted = [...items].sort((a, b) => {
@@ -58,6 +50,3 @@ document.getElementById("search").addEventListener("input", function() {
     display(sorted);
 });
 </script>
-
-</body>
-</html>
