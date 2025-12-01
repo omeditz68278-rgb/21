@@ -59,7 +59,6 @@ fetch("https://docs.google.com/spreadsheets/d/1O0H8iVkIk92U0W5HLLJG5pWtGkhPfBD7I
 function display(arr) {
     let html = "";
     arr.forEach(i => {
-        if (!i.name) return;
         html += `
             <tr>
                 <td>${i.sno}</td>
@@ -75,12 +74,13 @@ function display(arr) {
 document.getElementById("search").addEventListener("input", function () {
     let q = this.value.toLowerCase();
 
-    let sorted = [...items].sort((a, b) => {
-        let aMatch = a.name.toLowerCase().includes(q);
-        let bMatch = b.name.toLowerCase().includes(q);
-        return (bMatch ? 1 : 0) - (aMatch ? 1 : 0);
-    });
+    let filtered = items.filter(i =>
+        i.name.toLowerCase().includes(q) ||
+        i.section.toLowerCase().includes(q) ||
+        i.num.toLowerCase().includes(q) ||
+        i.sno.toLowerCase().includes(q)
+    );
 
-    display(sorted);
+    display(filtered);
 });
 </script>
