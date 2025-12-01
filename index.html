@@ -33,28 +33,34 @@ th {
 
 <script>
 let items = [];
+let lastSearch = "";
 
-fetch("https://docs.google.com/spreadsheets/d/1O0H8iVkIk92U0W5HLLJG5pWtGkhPfBD7IysidXc5sYI/export?format=csv")
-  .then(res => res.text())
-  .then(data => {
-      let rows = data.split(/\r?\n/);
-      items = [];
+async function loadData() {
+    try {
+        let res = await fetch("https://docs.google.com/spreadsheets/d/1O0H8iVkIk92U0W5HLLJG5pWtGkhPfBD7IysidXc5sYI/export?format=csv");
+        let data = await res.text();
 
-      rows.forEach((row, index) => {
-          let cols = row.split(",");
+        let rows = data.split(/\r?\n/);
+        items = [];
 
-          if (index === 0 || cols.length < 4) return;
+        rows.forEach((row, index) => {
+            let cols = row.split(",");
 
-          items.push({
-              sno: cols[0]?.trim(),
-              name: cols[1]?.trim(),
-              section: cols[2]?.trim(),
-              num: cols[3]?.trim()
-          });
-      });
+            if (index === 0 || cols.length < 4) return;
 
-      display(items);
-  });
+            items.push({
+                sno: cols[0]?.trim(),
+                name: cols[1]?.trim(),
+                section: cols[2]?.trim(),
+                num: cols[3]?.trim()
+            });
+        });
+
+        applyFilter(lastSearch);
+    } catch (e) {
+        console.log("Error loading data", e);
+    }
+}
 
 function display(arr) {
     let html = "";
@@ -71,16 +77,26 @@ function display(arr) {
     document.getElementById("sheetData").innerHTML = html;
 }
 
-document.getElementById("search").addEventListener("input", function () {
-    let q = this.value.toLowerCase();
+function applyFilter(q) {
+    lastSearch = q.toLowerCase();
 
     let filtered = items.filter(i =>
-        i.name.toLowerCase().includes(q) ||
-        i.section.toLowerCase().includes(q) ||
-        i.num.toLowerCase().includes(q) ||
-        i.sno.toLowerCase().includes(q)
+        i.name.toLowerCase().includes(lastSearch) ||
+        i.section.toLowerCase().includes(lastSearch) ||
+        i.num.toLowerCase().includes(lastSearch) ||
+        i.sno.toLowerCase().includes(lastSearch)
     );
 
     display(filtered);
+}
+
+document.getElementById("search").addEventListener("input", function () {
+    applyFilter(this.value);
 });
+
+// 🔥 Auto-refresh every 10 seconds
+setInterval(loadData, 10000);
+
+// First load
+loadData();
 </script>
