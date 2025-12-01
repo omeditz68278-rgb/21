@@ -1,3 +1,36 @@
+<style>
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+}
+
+th, td {
+    border: 1px solid #ddd;
+    padding: 10px;
+    text-align: left;
+}
+
+th {
+    background: #f2f2f2;
+    font-weight: bold;
+}
+</style>
+
+<input id="search" placeholder="Search..." style="padding:10px;width:100%;margin-top:10px">
+
+<table>
+    <thead>
+        <tr>
+            <th>S.NO</th>
+            <th>ITEM NAME</th>
+            <th>Section</th>
+            <th>Number</th>
+        </tr>
+    </thead>
+    <tbody id="sheetData"></tbody>
+</table>
+
 <script>
 let items = [];
 
@@ -5,16 +38,15 @@ fetch("https://docs.google.com/spreadsheets/d/1O0H8iVkIk92U0W5HLLJG5pWtGkhPfBD7I
   .then(res => res.text())
   .then(data => {
       let rows = data.split(/\r?\n/);
-
       items = [];
 
       rows.forEach((row, index) => {
           let cols = row.split(",");
 
-          // Skip bad rows or short rows
-          if (cols.length < 4 || index === 0) return;
+          if (index === 0 || cols.length < 4) return;
 
           items.push({
+              sno: cols[0]?.trim(),
               name: cols[1]?.trim(),
               section: cols[2]?.trim(),
               num: cols[3]?.trim()
@@ -27,15 +59,17 @@ fetch("https://docs.google.com/spreadsheets/d/1O0H8iVkIk92U0W5HLLJG5pWtGkhPfBD7I
 function display(arr) {
     let html = "";
     arr.forEach(i => {
-        if (!i.name) return; // skip empty rows
+        if (!i.name) return;
         html += `
-            <div class='item'>
-                <b>${i.name}</b><br>
-                Section: ${i.section} | Number: ${i.num}
-            </div>
+            <tr>
+                <td>${i.sno}</td>
+                <td>${i.name}</td>
+                <td>${i.section}</td>
+                <td>${i.num}</td>
+            </tr>
         `;
     });
-    document.getElementById("list").innerHTML = html;
+    document.getElementById("sheetData").innerHTML = html;
 }
 
 document.getElementById("search").addEventListener("input", function () {
