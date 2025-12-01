@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Item Search</title>
+  <style>
+    body { font-family: Arial; padding: 20px; }
+    .item { padding: 10px; background: #f3f3f3; margin: 5px 0; border-radius: 6px; }
+    #search { width: 100%; padding: 10px; margin-bottom: 15px; }
+  </style>
+</head>
+<body>
+
+<h2>Search Items</h2>
+<input type="text" id="search" placeholder="Search items...">
+
+<div id="list"></div>
+
+<script>
+let items = [];
+
+// Load Google Sheet CSV
+fetch("https://docs.google.com/spreadsheets/d/REPLACE_SHEET_ID/export?format=csv")
+  .then(res => res.text())
+  .then(data => {
+      let rows = data.split("\n").map(r => r.split(","));
+      rows.shift(); // skip header
+
+      items = rows.map(r => ({
+        name: r[1],    // ITEM NAME
+        section: r[2], // Section
+        num: r[3]      // Number
+      }));
+
+      display(items);
+  });
+
+function display(arr) {
+    let html = "";
+    arr.forEach(i => html += `
+        <div class='item'>
+            <b>${i.name}</b><br>
+            Section: ${i.section} | Number: ${i.num}
+        </div>
+    `);
+    document.getElementById("list").innerHTML = html;
+}
+
+// Search with TOP sorting
+document.getElementById("search").addEventListener("input", function() {
+    let q = this.value.toLowerCase();
+
+    let sorted = [...items].sort((a, b) => {
+        let aMatch = a.name.toLowerCase().includes(q);
+        let bMatch = b.name.toLowerCase().includes(q);
+        return (bMatch ? 1 : 0) - (aMatch ? 1 : 0);
+    });
+
+    display(sorted);
+});
+</script>
+
+</body>
+</html>
