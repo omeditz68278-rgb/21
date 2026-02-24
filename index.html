@@ -1,124 +1,179 @@
 <style>
-table {
-    width: 100%;
-    border-collapse: collapse;
-    margin-top: 20px;
-}
+    /* Global Styles */
+    body {
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        background-color: #f4f7f9;
+        margin: 0;
+        padding: 15px;
+        color: #333;
+    }
 
-th, td {
-    border: 1px solid #ddd;
-    padding: 10px;
-    text-align: left;
-}
+    /* Search Bar Styling */
+    #search {
+        padding: 12px 15px;
+        width: 100%;
+        margin-bottom: 20px;
+        border: 2px solid #ddd;
+        border-radius: 8px;
+        font-size: 16px;
+        box-sizing: border-box;
+        outline: none;
+        transition: border-color 0.3s;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+    }
 
-th {
-    background: #f2f2f2;
-    font-weight: bold;
-}
+    #search:focus {
+        border-color: #007bff;
+    }
+
+    /* Table Container for Desktop */
+    .table-container {
+        overflow-x: auto;
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    }
+
+    table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    th, td {
+        padding: 14px 10px;
+        border-bottom: 1px solid #eee;
+        text-align: left;
+    }
+
+    th {
+        background: #007bff;
+        color: white;
+        font-weight: 600;
+        text-transform: uppercase;
+        font-size: 13px;
+        letter-spacing: 0.5px;
+    }
+
+    tr:hover {
+        background-color: #f9f9f9;
+    }
+
+    /* MOBILE RESPONSIVE CSS (ASAL JADU YAHAN HAI) */
+    @media screen and (max-width: 600px) {
+        /* Table headers ko chhupa do */
+        thead {
+            display: none;
+        }
+
+        /* Har row ko ek Card bana do */
+        tr {
+            display: block;
+            margin-bottom: 15px;
+            background: #fff;
+            border: 1px solid #ddd;
+            border-radius: 10px;
+            padding: 10px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        }
+
+        /* Har cell ko vertical line mein set karein */
+        td {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 5px;
+            border-bottom: 1px solid #f1f1f1;
+            font-size: 14px;
+        }
+
+        td:last-child {
+            border-bottom: none;
+        }
+
+        /* Data ke aage header ka naam dikhane ke liye */
+        td::before {
+            content: attr(data-label);
+            font-weight: bold;
+            color: #555;
+            margin-right: 10px;
+            text-transform: capitalize;
+        }
+    }
 </style>
 
-<input id="search" placeholder="Search..." style="padding:10px;width:100%;margin-top:10px">
+<input id="search" type="text" placeholder="🔍 Search records..." autocomplete="off">
 
-<table>
-    <thead id="thead"></thead>
-    <tbody id="sheetData"></tbody>
-</table>
+<div class="table-container">
+    <table>
+        <thead id="thead"></thead>
+        <tbody id="sheetData"></tbody>
+    </table>
+</div>
 
 <script>
+// --- AAPKA PURANA JS LOGIC (NO CHANGES) ---
 let items = [];
 let headers = [];
 let lastSearch = "";
 
-// CSV parser that supports quotes correctly
 function parseCSV(text) {
     const rows = [];
     let row = [];
     let cell = "";
     let insideQuotes = false;
-
     for (let i = 0; i < text.length; i++) {
         const char = text[i];
-
-        if (char === '"' && text[i + 1] === '"') {
-            cell += '"';
-            i++;
-        } else if (char === '"') {
-            insideQuotes = !insideQuotes;
-        } else if (char === ',' && !insideQuotes) {
-            row.push(cell);
-            cell = "";
-        } else if ((char === '\n' || char === '\r') && !insideQuotes) {
-            if (cell || row.length) {
-                row.push(cell);
-                rows.push(row);
-                row = [];
-                cell = "";
-            }
-        } else {
-            cell += char;
-        }
+        if (char === '"' && text[i + 1] === '"') { cell += '"'; i++; } 
+        else if (char === '"') { insideQuotes = !insideQuotes; } 
+        else if (char === ',' && !insideQuotes) { row.push(cell); cell = ""; } 
+        else if ((char === '\n' || char === '\r') && !insideQuotes) {
+            if (cell || row.length) { row.push(cell); rows.push(row); row = []; cell = ""; }
+        } else { cell += char; }
     }
-
-    if (cell || row.length) {
-        row.push(cell);
-        rows.push(row);
-    }
-
+    if (cell || row.length) { row.push(cell); rows.push(row); }
     return rows;
 }
 
 async function loadData() {
-    const res = await fetch("https://docs.google.com/spreadsheets/d/1O0H8iVkIk92U0W5HLLJG5pWtGkhPfBD7IysidXc5sYI/export?format=csv");
-    const csv = await res.text();
-
-    const rows = parseCSV(csv);
-
-    headers = rows[0];
-    items = [];
-
-    for (let i = 1; i < rows.length; i++) {
-        if (rows[i].length === 0) continue;
-
-        let obj = {};
-        headers.forEach((h, index) => {
-            obj[h] = rows[i][index] || "";
-        });
-
-        items.push(obj);
-    }
-
-    renderTableHeader();
-    applyFilter(lastSearch);
+    try {
+        const res = await fetch("https://docs.google.com/spreadsheets/d/1O0H8iVkIk92U0W5HLLJG5pWtGkhPfBD7IysidXc5sYI/export?format=csv");
+        const csv = await res.text();
+        const rows = parseCSV(csv);
+        headers = rows[0];
+        items = [];
+        for (let i = 1; i < rows.length; i++) {
+            if (rows[i].length === 0) continue;
+            let obj = {};
+            headers.forEach((h, index) => { obj[h] = rows[i][index] || ""; });
+            items.push(obj);
+        }
+        renderTableHeader();
+        applyFilter(lastSearch);
+    } catch (e) { console.error("Error loading data:", e); }
 }
 
 function renderTableHeader() {
-    document.getElementById("thead").innerHTML =
-        "<tr>" + headers.map(h => `<th>${h}</th>`).join("") + "</tr>";
+    document.getElementById("thead").innerHTML = "<tr>" + headers.map(h => `<th>${h}</th>`).join("") + "</tr>";
 }
 
+// MODIFIED DISPLAY: Mobile label support add kiya gaya hai
 function display(arr) {
     let html = "";
-
     arr.forEach(row => {
         html += "<tr>";
         headers.forEach(h => {
-            html += `<td>${row[h]}</td>`;
+            // data-label add kiya gaya hai mobile view ke liye
+            html += `<td data-label="${h}">${row[h]}</td>`;
         });
         html += "</tr>";
     });
-
     document.getElementById("sheetData").innerHTML = html;
 }
 
 function applyFilter(q) {
     lastSearch = q.toLowerCase();
-
     let filtered = items.filter(row =>
-        Object.values(row).some(v =>
-            v.toString().toLowerCase().includes(lastSearch)
-        )
+        Object.values(row).some(v => v.toString().toLowerCase().includes(lastSearch))
     );
-
     display(filtered);
 }
 
@@ -126,8 +181,6 @@ document.getElementById("search").addEventListener("input", function () {
     applyFilter(this.value);
 });
 
-// Auto refresh every 10 seconds
 setInterval(loadData, 10000);
-
 loadData();
 </script>
