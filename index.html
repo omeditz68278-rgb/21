@@ -1,4 +1,64 @@
 <style>
+    #lock-screen {
+        position: fixed;
+        top: 0; left: 0;
+        width: 100%; height: 100%;
+        background: rgba(255, 255, 255, 0.8);
+        backdrop-filter: blur(15px);
+        z-index: 9999;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+    .login-box {
+        background: white;
+        padding: 30px;
+        border-radius: 15px;
+        box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        text-align: center;
+        width: 300px;
+    }
+    /* Logo Styling */
+    .login-logo {
+        width: 120px;
+        margin-bottom: 15px;
+    }
+    .login-box h2 { margin-top: 0; color: #007bff; font-size: 20px; }
+    #passInput {
+        width: 100%;
+        padding: 10px;
+        margin: 15px 0;
+        border: 2px solid #ddd;
+        border-radius: 8px;
+        outline: none;
+        text-align: center;
+        font-size: 18px;
+    }
+    #loginBtn {
+        background: #007bff;
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 8px;
+        cursor: pointer;
+        font-weight: bold;
+        width: 100%;
+    }
+    #loginBtn:hover { background: #0056b3; }
+    #errMsg { color: red; font-size: 12px; margin-top: 10px; display: none; }
+</style>
+
+<div id="lock-screen">
+    <div class="login-box">
+        <img src="https://static.wixstatic.com/media/6998bf_8033e1d27c44447dae60bed7b4de24bd~mv2.png" alt="Logo" class="login-logo">
+        <h2>🔒 STOCK ACCESS</h2>
+        <input type="password" id="passInput" placeholder="Enter Password">
+        <button id="loginBtn">Unlock Dashboard</button>
+        <p id="errMsg">Wrong Password</p>
+    </div>
+</div>
+
+<style>
     /* Global Styles */
     body {
         font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -7,8 +67,7 @@
         padding: 15px;
         color: #333;
     }
-
-    /* Search Bar Styling */
+    /* ... (Table and search styles same as before) ... */
     #search {
         padding: 12px 15px;
         width: 100%;
@@ -21,82 +80,24 @@
         transition: border-color 0.3s;
         box-shadow: 0 2px 5px rgba(0,0,0,0.05);
     }
-
-    #search:focus {
-        border-color: #007bff;
-    }
-
-    /* Table Container for Desktop */
+    #search:focus { border-color: #007bff; }
     .table-container {
         overflow-x: auto;
         background: white;
         border-radius: 8px;
         box-shadow: 0 4px 15px rgba(0,0,0,0.1);
     }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { padding: 14px 10px; border-bottom: 1px solid #eee; text-align: left; }
+    th { background: #007bff; color: white; font-weight: 600; text-transform: uppercase; font-size: 13px; letter-spacing: 0.5px; }
+    tr:hover { background-color: #f9f9f9; }
 
-    table {
-        width: 100%;
-        border-collapse: collapse;
-    }
-
-    th, td {
-        padding: 14px 10px;
-        border-bottom: 1px solid #eee;
-        text-align: left;
-    }
-
-    th {
-        background: #007bff;
-        color: white;
-        font-weight: 600;
-        text-transform: uppercase;
-        font-size: 13px;
-        letter-spacing: 0.5px;
-    }
-
-    tr:hover {
-        background-color: #f9f9f9;
-    }
-
-    /* MOBILE RESPONSIVE CSS (ASAL JADU YAHAN HAI) */
     @media screen and (max-width: 600px) {
-        /* Table headers ko chhupa do */
-        thead {
-            display: none;
-        }
-
-        /* Har row ko ek Card bana do */
-        tr {
-            display: block;
-            margin-bottom: 15px;
-            background: #fff;
-            border: 1px solid #ddd;
-            border-radius: 10px;
-            padding: 10px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
-        }
-
-        /* Har cell ko vertical line mein set karein */
-        td {
-            display: flex;
-            justify-content: space-between;
-            padding: 8px 5px;
-            border-bottom: 1px solid #f1f1f1;
-            font-size: 14px;
-        }
-
-        td:last-child {
-            border-bottom: none;
-        }
-
-        /* Data ke aage header ka naam dikhane ke liye */
-        td::before {
-            content: attr(data-label);
-            font-weight: bold;
-            color: #555;
-            margin-right: 10px;
-            text-transform: capitalize;
-        }
+        thead { display: none; }
+        tr { display: block; margin-bottom: 15px; background: #fff; border: 1px solid #ddd; border-radius: 10px; padding: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+        td { display: flex; justify-content: space-between; padding: 8px 5px; border-bottom: 1px solid #f1f1f1; font-size: 14px; }
+        td:last-child { border-bottom: none; }
+        td::before { content: attr(data-label); font-weight: bold; color: #555; margin-right: 10px; text-transform: capitalize; }
     }
 </style>
 
@@ -110,7 +111,33 @@
 </div>
 
 <script>
-// --- AAPKA PURANA JS LOGIC (NO CHANGES) ---
+// --- PASSWORD LOGIC ---
+const THE_PASSWORD = "store"; 
+
+function validate() {
+    const input = document.getElementById("passInput").value;
+    const error = document.getElementById("errMsg");
+    
+    if (input === THE_PASSWORD) {
+        sessionStorage.setItem("isAllowed", "true");
+        document.getElementById("lock-screen").style.display = "none";
+        loadData(); 
+    } else {
+        error.style.display = "block";
+        document.getElementById("passInput").value = "";
+    }
+}
+
+document.getElementById("loginBtn").addEventListener("click", validate);
+document.getElementById("passInput").addEventListener("keypress", (e) => {
+    if (e.key === "Enter") validate();
+});
+
+if (sessionStorage.getItem("isAllowed") === "true") {
+    document.getElementById("lock-screen").style.display = "none";
+}
+
+// --- JS LOGIC (NO CHANGES) ---
 let items = [];
 let headers = [];
 let lastSearch = "";
@@ -134,6 +161,7 @@ function parseCSV(text) {
 }
 
 async function loadData() {
+    if (sessionStorage.getItem("isAllowed") !== "true") return;
     try {
         const res = await fetch("https://docs.google.com/spreadsheets/d/1O0H8iVkIk92U0W5HLLJG5pWtGkhPfBD7IysidXc5sYI/export?format=csv");
         const csv = await res.text();
@@ -155,13 +183,11 @@ function renderTableHeader() {
     document.getElementById("thead").innerHTML = "<tr>" + headers.map(h => `<th>${h}</th>`).join("") + "</tr>";
 }
 
-// MODIFIED DISPLAY: Mobile label support add kiya gaya hai
 function display(arr) {
     let html = "";
     arr.forEach(row => {
         html += "<tr>";
         headers.forEach(h => {
-            // data-label add kiya gaya hai mobile view ke liye
             html += `<td data-label="${h}">${row[h]}</td>`;
         });
         html += "</tr>";
@@ -182,5 +208,5 @@ document.getElementById("search").addEventListener("input", function () {
 });
 
 setInterval(loadData, 10000);
-loadData();
+if (sessionStorage.getItem("isAllowed") === "true") loadData();
 </script>
